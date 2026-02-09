@@ -12,7 +12,7 @@ export interface ProductDetail {
   id: string;
   name: string;
   price: number;
-  image: string;
+  imageUrl: string;
   notes?: string;
   size?: string;
   description?: string;
@@ -45,7 +45,7 @@ export function ProductDetails({ product, className }: ProductDetailsProps) {
         id: product.id,
         name: product.name,
         price: product.price,
-        image: product.image,
+        image: product.imageUrl,
       },
       quantity
     );
@@ -89,7 +89,7 @@ export function ProductDetails({ product, className }: ProductDetailsProps) {
                   <div className="absolute inset-0 bg-secondary/50 animate-pulse" />
                 )}
                 <Image
-                  src={product.image || "/placeholder.svg"}
+                  src={product.imageUrl || "/placeholder.svg"}
                   alt={product.name}
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"

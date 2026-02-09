@@ -4,9 +4,13 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
+import { 
+  Eye, EyeOff, ArrowRight, Sparkles, Mail, Lock, 
+  Crown, Shield, Gem, Check, Star, ChevronRight, 
+  Sparkle, Users, Package
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth, getRedirectUrl, type OAuthProvider } from "@/lib/auth-context";
+import { useAuth, type OAuthProvider } from "@/lib/auth-context";
 
 interface LoginFormProps {
   onSubmit?: (data: { email: string; password: string }) => void;
@@ -25,16 +29,27 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [glowPosition, setGlowPosition] = useState({ x: 50, y: 50 });
 
   useEffect(() => {
     setMounted(true);
+    
+    // Mouse move effect for background glow
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setGlowPosition({ x, y });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   // If already authenticated, redirect
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      const redirectUrl = getRedirectUrl() || "/";
-      router.push(redirectUrl);
+      router.push("/");
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -47,9 +62,7 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
 
     if (result.success) {
       onSubmit?.({ email, password });
-      // Get redirect URL (e.g., /checkout) or default to home
-      const redirectUrl = getRedirectUrl() || "/";
-      router.push(redirectUrl);
+      router.push("/");
     } else {
       setError(result.error || "Login failed");
       setIsLoading(false);
@@ -63,8 +76,7 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
     const result = await loginWithOAuth(provider);
 
     if (result.success) {
-      const redirectUrl = getRedirectUrl() || "/";
-      router.push(redirectUrl);
+     router.push("/");
     } else {
       setError(result.error || `Failed to sign in with ${provider}`);
       setOauthLoading(null);
@@ -79,55 +91,113 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
         className
       )}
     >
+      {/* Animated background glow */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: `radial-gradient(circle at ${glowPosition.x}% ${glowPosition.y}%, 
+            var(--primary)/5%, 
+            transparent 40%)`,
+        }}
+      />
+
       {/* Header */}
-      <div className="text-center mb-12">
-        <Link href="/" className="inline-block mb-8 group">
-          <h2 className="font-serif text-2xl font-semibold tracking-[0.15em] text-foreground transition-all duration-300 group-hover:tracking-[0.2em]">
+      <div className="relative z-10 text-center mb-12">
+        {/* Logo with glow */}
+        <Link href="/" className="inline-block mb-10 group relative">
+          <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <h2 className="font-serif text-2xl font-semibold tracking-[0.25em] text-foreground transition-all duration-300 group-hover:tracking-[0.3em] group-hover:scale-105 relative">
             MAISON NOIR
+            <Sparkle className="absolute -top-3 -right-3 h-4 w-4 text-primary/50 opacity-0 group-hover:opacity-100 animate-pulse" />
           </h2>
         </Link>
-        <h1 className="font-serif text-4xl md:text-5xl font-medium text-foreground mb-4">
+        
+        {/* Animated crown */}
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 blur-xl animate-pulse" />
+          <div className="relative">
+            <Crown className="h-14 w-14 text-primary/80 mx-auto mb-6 drop-shadow-lg animate-float" />
+            <Sparkles className="absolute top-0 right-10 h-6 w-6 text-amber-400/60 animate-spin-slow" />
+            <Sparkles className="absolute bottom-2 left-12 h-4 w-4 text-primary/50 animate-ping" />
+          </div>
+        </div>
+        
+        <h1 className="font-serif text-4xl md:text-5xl font-medium text-foreground mb-4 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/80 bg-clip-text text-transparent">
           Welcome Back
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground font-light text-sm tracking-wide">
           Sign in to access your account and exclusive benefits
         </p>
       </div>
 
+      {/* VIP Marquee */}
+      <div className="relative mb-8 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background z-10" />
+        <div className="flex gap-6 animate-marquee whitespace-nowrap">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-full">
+                <Star className="h-3 w-3 text-primary/70 animate-spin-slow" />
+                <span className="text-xs font-medium text-primary/80 tracking-wider">VIP ACCESS</span>
+                <Star className="h-3 w-3 text-primary/70 animate-spin-slow" />
+              </div>
+              <Gem className="h-3 w-3 text-amber-400/60" />
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/20 rounded-full">
+                <Package className="h-3 w-3 text-amber-500/70" />
+                <span className="text-xs font-medium text-amber-600/80 tracking-wider">FREE SHIPPING</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center animate-in fade-in slide-in-from-top-2 duration-300">
-          {error}
+        <div className="relative z-10 mb-6 p-4 bg-destructive/10 backdrop-blur-sm border border-destructive/30 rounded-2xl text-destructive text-sm text-center animate-in fade-in slide-in-from-top-2 duration-300 flex items-center justify-center gap-3">
+          <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent rounded-2xl" />
+          <Shield className="h-4 w-4 relative z-10" />
+          <span className="relative z-10">{error}</span>
         </div>
       )}
 
-      {/* OAuth Sign-in Options */}
-      <div className="space-y-3">
-        {/* Google Sign In Button */}
+      {/* OAuth Sign-in */}
+      <div className="relative z-10 space-y-3 mb-8">
         <button
           type="button"
           onClick={() => handleOAuthLogin("google")}
           disabled={isLoading || oauthLoading !== null}
           className={cn(
             "group w-full h-14 flex items-center justify-center gap-3",
-            "bg-background border border-border hover:border-foreground/30",
+            "bg-gradient-to-br from-card/80 via-card/60 to-card/40 backdrop-blur-xl",
+            "border border-border/50 hover:border-primary/40",
             "text-foreground font-medium text-sm tracking-wide",
-            "transition-all duration-300",
-            "hover:shadow-lg hover:shadow-foreground/5",
+            "transition-all duration-500 rounded-2xl",
+            "hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             "relative overflow-hidden"
           )}
         >
-          {/* Subtle hover background effect */}
-          <span className="absolute inset-0 bg-foreground/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          
+          {/* Animated border */}
+          <div className="absolute inset-0 rounded-2xl p-[1px]">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          </div>
+          
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-white/5 via-30% to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" />
+          </div>
           
           {oauthLoading === "google" ? (
-            <span className="inline-block h-5 w-5 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+            <div className="relative z-10">
+              <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
           ) : (
             <>
-              {/* Google Icon */}
               <svg
-                className="w-5 h-5 relative z-10"
+                className="w-5 h-5 relative z-10 group-hover:scale-110 transition-transform duration-300"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -149,38 +219,54 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
                   fill="#EA4335"
                 />
               </svg>
-              <span className="relative z-10">Continue with Google</span>
+              <span className="relative z-10 font-medium group-hover:tracking-wider transition-all duration-300">
+                Continue with Google
+              </span>
             </>
           )}
         </button>
       </div>
 
-      {/* Divider between OAuth and Email */}
+      {/* Divider */}
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-4 text-xs text-muted-foreground uppercase tracking-widest">
-            or continue with email
+          <span className="bg-background px-8 text-xs text-muted-foreground uppercase tracking-[0.3em] font-medium">
+            OR SIGN IN WITH EMAIL
           </span>
         </div>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
         {/* Email Field */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label
             htmlFor="email"
             className={cn(
-              "block text-sm font-medium tracking-wide uppercase transition-colors duration-300",
-              focusedField === "email" ? "text-foreground" : "text-muted-foreground"
+              "block text-xs font-medium tracking-widest uppercase transition-all duration-300",
+              focusedField === "email" 
+                ? "text-primary animate-pulse" 
+                : "text-muted-foreground"
             )}
           >
             Email Address
           </label>
-          <div className="relative">
+          <div className="relative group">
+            {/* Animated border */}
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 rounded-2xl blur-sm opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+            
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+              <Mail className={cn(
+                "h-5 w-5 transition-all duration-500",
+                focusedField === "email" 
+                  ? "text-primary scale-125 animate-bounce" 
+                  : "text-muted-foreground/60 group-hover:text-foreground group-hover:scale-110"
+              )} />
+            </div>
+            
             <input
               id="email"
               type="email"
@@ -191,30 +277,38 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
               required
               disabled={oauthLoading !== null}
               autoComplete="email"
-              className="w-full h-14 px-4 bg-transparent border border-border text-foreground placeholder:text-muted-foreground/50 focus:border-foreground focus:outline-none transition-all duration-300 focus:shadow-lg focus:shadow-foreground/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-14 pl-12 pr-4 bg-gradient-to-br from-card/70 to-card/30 backdrop-blur-xl border border-border/50 text-foreground placeholder:text-muted-foreground/40 focus:border-primary/60 focus:outline-none transition-all duration-500 focus:shadow-2xl focus:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl group-hover:border-foreground/30 relative"
               placeholder="your@email.com"
-            />
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-0.5 bg-foreground transition-all duration-500",
-                focusedField === "email" ? "w-full" : "w-0"
-              )}
             />
           </div>
         </div>
 
         {/* Password Field */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label
             htmlFor="password"
             className={cn(
-              "block text-sm font-medium tracking-wide uppercase transition-colors duration-300",
-              focusedField === "password" ? "text-foreground" : "text-muted-foreground"
+              "block text-xs font-medium tracking-widest uppercase transition-all duration-300",
+              focusedField === "password" 
+                ? "text-primary animate-pulse" 
+                : "text-muted-foreground"
             )}
           >
             Password
           </label>
-          <div className="relative">
+          <div className="relative group">
+            {/* Animated border */}
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30 rounded-2xl blur-sm opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+            
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+              <Lock className={cn(
+                "h-5 w-5 transition-all duration-500",
+                focusedField === "password" 
+                  ? "text-primary scale-125 animate-bounce" 
+                  : "text-muted-foreground/60 group-hover:text-foreground group-hover:scale-110"
+              )} />
+            </div>
+            
             <input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -225,13 +319,14 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
               required
               disabled={oauthLoading !== null}
               autoComplete="current-password"
-              className="w-full h-14 px-4 pr-12 bg-transparent border border-border text-foreground placeholder:text-muted-foreground/50 focus:border-foreground focus:outline-none transition-all duration-300 focus:shadow-lg focus:shadow-foreground/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-14 pl-12 pr-12 bg-gradient-to-br from-card/70 to-card/30 backdrop-blur-xl border border-border/50 text-foreground placeholder:text-muted-foreground/40 focus:border-primary/60 focus:outline-none transition-all duration-500 focus:shadow-2xl focus:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl group-hover:border-foreground/30 relative"
               placeholder="Enter your password"
             />
+            
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-300 p-1"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-primary transition-all duration-300 p-2 hover:scale-125 hover:rotate-12"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -240,23 +335,45 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
                 <Eye className="h-5 w-5" strokeWidth={1.5} />
               )}
             </button>
-            <div
-              className={cn(
-                "absolute bottom-0 left-0 h-0.5 bg-foreground transition-all duration-500",
-                focusedField === "password" ? "w-full" : "w-0"
-              )}
-            />
           </div>
         </div>
 
-        {/* Forgot Password Link */}
-        <div className="flex justify-end">
+        {/* Options Row */}
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={cn(
+                "h-5 w-5 border rounded-md transition-all duration-500 flex items-center justify-center",
+                "group-hover:scale-110 group-hover:border-primary/60",
+                rememberMe
+                  ? "bg-primary border-primary shadow-lg shadow-primary/30"
+                  : "border-border bg-card/50 backdrop-blur-sm"
+              )}>
+                {rememberMe && (
+                  <Check className="h-3 w-3 text-background animate-scale-in" strokeWidth={3} />
+                )}
+              </div>
+            </div>
+            <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+              Remember me
+            </span>
+          </label>
+
           <Link
             href="/forgot-password"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 relative group"
+            className="text-sm text-muted-foreground hover:text-primary transition-all duration-300 relative group"
           >
-            Forgot password?
-            <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-foreground transition-all duration-300 group-hover:w-full" />
+            <span className="relative flex items-center gap-1">
+              Forgot password?
+              <ChevronRight className="h-4 w-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+              <span className="absolute -bottom-1 left-0 w-0 h-px bg-gradient-to-r from-primary to-primary/30 transition-all duration-300 group-hover:w-full" />
+            </span>
           </Link>
         </div>
 
@@ -264,14 +381,32 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
         <button
           type="submit"
           disabled={isLoading || oauthLoading !== null}
-          className="group w-full h-14 bg-foreground text-background font-medium tracking-widest uppercase text-sm hover:shadow-xl hover:shadow-foreground/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-500 flex items-center justify-center gap-2 relative overflow-hidden"
+          className="group w-full h-14 bg-gradient-to-r from-primary via-primary/90 to-primary font-medium tracking-widest uppercase text-sm hover:shadow-2xl hover:shadow-primary/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-500 flex items-center justify-center gap-2 relative overflow-hidden rounded-2xl hover:-translate-y-1 active:scale-95"
         >
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-primary opacity-100 group-hover:opacity-90 transition-opacity duration-300" />
+          
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-white/30 via-40% to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer" />
+          </div>
+          
+          {/* Pulsing glow */}
+          <div className="absolute -inset-[2px] bg-gradient-to-r from-primary via-primary/50 to-primary blur opacity-0 group-hover:opacity-50 group-hover:animate-pulse-slow transition-opacity duration-500" />
+          
+          {/* Inner glow */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
           {isLoading ? (
-            <span className="inline-block h-5 w-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+            <div className="relative z-10">
+              <div className="h-5 w-5 border-2 border-background/40 border-t-background rounded-full animate-spin" />
+            </div>
           ) : (
             <>
-              <span className="relative z-10">Sign In</span>
-              <ArrowRight className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+              <span className="relative z-10 text-background font-semibold tracking-widest">
+                Sign In
+              </span>
+              <ArrowRight className="h-4 w-4 relative z-10 text-background transition-all duration-300 group-hover:translate-x-2 group-hover:scale-125" />
             </>
           )}
         </button>
@@ -280,44 +415,83 @@ export function LoginForm({ onSubmit, className }: LoginFormProps) {
       {/* Divider */}
       <div className="relative my-10">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-background px-4 text-sm text-muted-foreground flex items-center gap-2">
-            <Sparkles className="w-3 h-3" />
-            New to Maison Noir?
-            <Sparkles className="w-3 h-3" />
-          </span>
+          <div className="bg-background px-8 flex items-center gap-4">
+            <Sparkles className="w-4 h-4 text-primary/50 animate-pulse" />
+            <span className="text-sm text-muted-foreground font-light tracking-wide">
+              New to Maison Noir?
+            </span>
+            <Sparkles className="w-4 h-4 text-primary/50 animate-pulse" />
+          </div>
         </div>
       </div>
 
       {/* Register Link */}
       <Link
         href="/register"
-        className="group w-full h-14 border border-foreground/30 text-foreground font-medium tracking-widest uppercase text-sm hover:bg-foreground hover:text-background transition-all duration-500 flex items-center justify-center gap-2"
+        className="group w-full h-14 border border-border/50 bg-gradient-to-br from-card/50 via-card/30 to-card/10 backdrop-blur-xl text-foreground font-medium tracking-widest uppercase text-sm hover:border-primary/40 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex items-center justify-center gap-2 relative overflow-hidden rounded-2xl"
       >
-        <span>Create Account</span>
-        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+        {/* Hover gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        
+        {/* Shimmer border */}
+        <div className="absolute inset-0 rounded-2xl p-[1px]">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        </div>
+        
+        <span className="relative z-10 group-hover:tracking-wider transition-all duration-300">
+          Create Account
+        </span>
+        <ArrowRight className="h-4 w-4 relative z-10 transition-all duration-300 group-hover:translate-x-2 group-hover:scale-125" />
       </Link>
 
       {/* Trust Badges */}
-      <div className="mt-12 pt-8 border-t border-border/50">
-        <p className="text-center text-xs text-muted-foreground leading-relaxed">
+      <div className="mt-12 pt-8 border-t border-border/20">
+        <div className="flex items-center justify-center gap-8 mb-6">
+          {["SSL SECURE", "GDPR COMPLIANT", "AES-256 ENCRYPTED"].map((badge) => (
+            <div key={badge} className="text-center group">
+              <div className="w-10 h-10 border border-border/30 rounded-xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm bg-card/40 group-hover:scale-110 transition-all duration-300 group-hover:border-primary/30">
+                <Shield className="h-5 w-5 text-primary/60 group-hover:text-primary transition-colors duration-300" />
+              </div>
+              <p className="text-xs font-medium text-foreground/70 group-hover:text-foreground transition-colors duration-300">
+                {badge}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xs text-muted-foreground/70 leading-relaxed font-light tracking-wide">
           By signing in, you agree to our{" "}
           <Link
             href="/terms"
-            className="underline hover:text-foreground transition-colors"
+            className="underline hover:text-primary transition-colors duration-300"
           >
             Terms of Service
           </Link>{" "}
           and{" "}
           <Link
             href="/privacy"
-            className="underline hover:text-foreground transition-colors"
+            className="underline hover:text-primary transition-colors duration-300"
           >
             Privacy Policy
           </Link>
         </p>
+      </div>
+
+      {/* Stats Footer */}
+      <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+        {[
+          { label: "Premium Members", value: "10K+", icon: Users },
+          { label: "Exclusive Scents", value: "200+", icon: Package },
+          { label: "Countries", value: "50+", icon: Star },
+        ].map((stat, index) => (
+          <div key={index} className="p-3 bg-card/20 backdrop-blur-sm border border-border/20 rounded-xl">
+            <stat.icon className="h-4 w-4 text-primary/60 mx-auto mb-2" />
+            <p className="text-lg font-bold text-foreground">{stat.value}</p>
+            <p className="text-xs text-muted-foreground">{stat.label}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

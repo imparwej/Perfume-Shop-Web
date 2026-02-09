@@ -201,12 +201,25 @@ export function Navbar() {
                       <ShoppingBag className="h-4 w-4" strokeWidth={1.5} />
                       Order History
                     </Link>
+                   {user.role === "ADMIN" && (
+                      <>
+                        <div className="my-2 border-t border-border/30"></div>
+                        <Link
+                          href="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2.5 text-sm text-accent hover:text-accent hover:bg-accent/10 rounded-md transition-colors duration-200 font-medium"
+                        >
+                          <User className="h-4 w-4" strokeWidth={1.5} />
+                          Admin Dashboard
+                        </Link>
+                      </>
+                    )}
                     <button
-                      type="button"
-                      onClick={() => {
-                        logout();
-                        setUserMenuOpen(false);
-                      }}
+                    type="button"
+                     onClick={() => {
+                      logout();
+                      setUserMenuOpen(false);
+                     }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-foreground/80 hover:text-foreground hover:bg-secondary/50 rounded-md transition-colors duration-200"
                     >
                       <LogOut className="h-4 w-4" strokeWidth={1.5} />
@@ -329,9 +342,9 @@ export function Navbar() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      logout();
-                      setIsOpen(false);
+                   onClick={() => {
+                   logout();
+                   setIsOpen(false);
                     }}
                     className="p-2.5 text-foreground/80 hover:text-foreground border border-border/50 rounded-full hover:bg-secondary/50 transition-colors duration-200"
                     aria-label="Sign out"

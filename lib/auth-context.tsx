@@ -8,194 +8,137 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 
-// User type - matches common backend auth patterns
 export interface User {
-  id: string;
-  email: string;
   name: string;
-  avatar?: string;
-  provider?: "email" | "google" | "apple"; // Track auth provider
+  email: string;
+  role: "ADMIN" | "USER";
+  provider: "LOCAL" | "GOOGLE";
 }
 
-// OAuth provider types
-export type OAuthProvider = "google" | "apple";
+export type OAuthProvider = "google";
 
-// Auth state and methods
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
   loginWithOAuth: (provider: OAuthProvider) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Storage key for mock auth
-const AUTH_STORAGE_KEY = "maison_noir_auth_user";
-const REDIRECT_KEY = "maison_noir_redirect_after_login";
+const API = "http://localhost:8080/api/auth";
+const TOKEN_KEY = "maison_noir_token";
 
-// Helper to get/set redirect URL
-export function setRedirectUrl(url: string) {
-  if (typeof window !== "undefined") {
-    sessionStorage.setItem(REDIRECT_KEY, url);
+function decodeJWT(token: string) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
   }
-}
-
-export function getRedirectUrl(): string | null {
-  if (typeof window !== "undefined") {
-    const url = sessionStorage.getItem(REDIRECT_KEY);
-    sessionStorage.removeItem(REDIRECT_KEY);
-    return url;
-  }
-  return null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from storage on mount
+  // 🔥 restore session on refresh
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // MOCK: Read from localStorage
-        // BACKEND: Replace with API call to validate session/token
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (stored) {
-          const userData = JSON.parse(stored) as User;
-          setUser(userData);
-        }
-      } catch {
-        // Invalid stored data, clear it
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const token = localStorage.getItem(TOKEN_KEY);
 
-    initAuth();
+    if (token) {
+      const payload = decodeJWT(token);
+      if (payload?.sub) {
+        setUser({
+          name: payload.name,
+          email: payload.sub,
+          role: payload.role,
+          provider: payload.provider,
+        });
+      }
+    }
+
+    setIsLoading(false);
   }, []);
 
-  const login = useCallback(
-    async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-      try {
-        // MOCK: Simulate API delay and validation
-        // BACKEND: Replace with actual API call
-        // e.g., const response = await fetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
-        
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-        // Mock validation - accept any email with password length >= 6
-        if (password.length < 6) {
-          return { success: false, error: "Invalid email or password" };
-        }
+      const data = await res.json();
 
-        // Create mock user
-        const mockUser: User = {
-          id: `user_${Date.now()}`,
+      if (!res.ok) return { success: false, error: "Invalid credentials" };
+
+      localStorage.setItem(TOKEN_KEY, data.token);
+
+      const payload = decodeJWT(data.token);
+
+      setUser({
+        name: payload.name,
+        email: payload.sub,
+        role: payload.role,
+        provider: payload.provider,
+      });
+
+      return { success: true };
+    } catch {
+      return { success: false, error: "Server error" };
+    }
+  }, []);
+
+  const register = useCallback(async (email: string, password: string) => {
+    try {
+      const res = await fetch(`${API}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: email.split("@")[0],
           email,
-          name: email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-        };
+          password,
+        }),
+      });
 
-        // MOCK: Store in localStorage
-        // BACKEND: The API would set an HTTP-only cookie instead
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-        setUser(mockUser);
+      const data = await res.json();
 
-        return { success: true };
-      } catch {
-        return { success: false, error: "An error occurred. Please try again." };
-      }
-    },
-    []
-  );
+      if (!res.ok) return { success: false, error: "Signup failed" };
 
-  const register = useCallback(
-    async (
-      email: string,
-      password: string,
-      name: string
-    ): Promise<{ success: boolean; error?: string }> => {
-      try {
-        // MOCK: Simulate API delay
-        // BACKEND: Replace with actual API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      localStorage.setItem(TOKEN_KEY, data.token);
 
-        if (password.length < 6) {
-          return { success: false, error: "Password must be at least 6 characters" };
-        }
+      const payload = decodeJWT(data.token);
 
-        const mockUser: User = {
-          id: `user_${Date.now()}`,
-          email,
-          name,
-        };
+      setUser({
+        name: payload.name,
+        email: payload.sub,
+        role: payload.role,
+        provider: payload.provider,
+      });
 
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-        setUser(mockUser);
+      return { success: true };
+    } catch {
+      return { success: false, error: "Server error" };
+    }
+  }, []);
 
-        return { success: true };
-      } catch {
-        return { success: false, error: "An error occurred. Please try again." };
-      }
-    },
-    []
-  );
+  const loginWithOAuth = useCallback(async () => {
+    window.location.href =
+      "http://localhost:8080/oauth2/authorization/google?prompt=select_account";
+    return { success: true };
+  }, []);
 
-  const loginWithOAuth = useCallback(
-    async (provider: OAuthProvider): Promise<{ success: boolean; error?: string }> => {
-      try {
-        // MOCK: Simulate OAuth popup/redirect flow
-        // BACKEND: Replace with actual OAuth implementation:
-        //
-        // Option 1: Redirect flow (recommended for production)
-        // window.location.href = `/api/auth/${provider}`;
-        // return { success: true };
-        //
-        // Option 2: Popup flow
-        // const popup = window.open(`/api/auth/${provider}`, 'oauth', 'width=500,height=600');
-        // return new Promise((resolve) => {
-        //   window.addEventListener('message', (e) => {
-        //     if (e.data.type === 'oauth-success') resolve({ success: true });
-        //   });
-        // });
-        //
-        // Option 3: Using OAuth libraries (NextAuth.js, Auth.js, etc.)
-        // import { signIn } from "next-auth/react";
-        // await signIn(provider, { callbackUrl: getRedirectUrl() || "/" });
-        
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Mock user from OAuth provider
-        const mockOAuthUser: User = {
-          id: `${provider}_${Date.now()}`,
-          email: `user.${Date.now()}@gmail.com`,
-          name: "Google User",
-          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=GU&backgroundColor=1a1a1a`,
-          provider,
-        };
-
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockOAuthUser));
-        setUser(mockOAuthUser);
-
-        return { success: true };
-      } catch {
-        return { success: false, error: `Failed to sign in with ${provider}. Please try again.` };
-      }
-    },
-    []
-  );
-
-  const logout = useCallback(async () => {
-    // MOCK: Clear localStorage
-    // BACKEND: Call logout API endpoint to invalidate session
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
-  }, []);
+    router.push("/login");
+  }, [router]);
 
   return (
     <AuthContext.Provider
@@ -204,9 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
-        loginWithOAuth,
-        logout,
         register,
+        logout,
+        loginWithOAuth,
       }}
     >
       {children}
@@ -216,23 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used inside AuthProvider");
   return context;
-}
-
-// Hook to require auth - for use in checkout
-export function useRequireAuth(redirectUrl: string = "/login") {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // Store current URL to redirect back after login
-      setRedirectUrl(window.location.pathname);
-      window.location.href = redirectUrl;
-    }
-  }, [isAuthenticated, isLoading, redirectUrl]);
-
-  return { isAuthenticated, isLoading };
 }

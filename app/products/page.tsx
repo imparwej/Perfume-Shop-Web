@@ -1,20 +1,36 @@
 import { Navbar } from "@/components/navbar";
 import { ProductGrid } from "@/components/product-grid";
 import { Footer } from "@/components/footer";
-import { getAllProducts } from "@/lib/products";
 
 export const metadata = {
   title: "The Collection | MAISON NOIR",
-  description: "Explore our signature collection of luxury fragrances crafted with rare botanicals and precious essences.",
+  description:
+    "Explore our signature collection of luxury fragrances crafted with rare botanicals and precious essences.",
 };
 
-export default function ProductsPage() {
-  const products = getAllProducts();
+// 🔹 Backend API call (SERVER SIDE)
+async function getProducts() {
+  const res = await fetch("http://localhost:8080/api/perfumes", {
+    cache: "no-store", // always fresh data
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch products");
+  }
+
+  const data = await res.json();
+
+  // IMPORTANT: pagination response se content nikalna
+  return data.content;
+}
+
+export default async function ProductsPage() {
+  const products = await getProducts();
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="relative">
         {/* Hero Header */}
         <section className="pt-32 pb-16 px-6 text-center">
@@ -25,7 +41,7 @@ export default function ProductsPage() {
             The Collection
           </h1>
           <p className="max-w-xl mx-auto text-muted-foreground leading-relaxed">
-            Each fragrance in our collection is a masterpiece, meticulously crafted 
+            Each fragrance in our collection is a masterpiece, meticulously crafted
             using the world&apos;s finest ingredients to evoke emotion and memory.
           </p>
         </section>
@@ -43,7 +59,7 @@ export default function ProductsPage() {
               Need Assistance?
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-8">
-              Our fragrance consultants are available to guide you through our collection 
+              Our fragrance consultants are available to guide you through our collection
               and help you find your signature scent.
             </p>
             <a

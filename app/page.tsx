@@ -11,10 +11,17 @@ import { CustomerReviews } from "@/components/customer-reviews";
 import { FragranceCustomizer } from "@/components/fragrance-customizer";
 import { Footer } from "@/components/footer";
 import { NewsletterForm } from "@/components/newsletter-form";
-import { getFeaturedProducts } from "@/lib/products";
+
 
 export default function Home() {
-  const featuredProducts = getFeaturedProducts();
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+
+useEffect(() => {
+  fetch("http://localhost:8080/api/perfumes/featured")
+    .then(res => res.json())
+    .then(data => setFeaturedProducts(data));
+}, []);
+
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 

@@ -1,20 +1,22 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { ProductDetails } from "@/components/product-details";
 import { Footer } from "@/components/footer";
-import { getProductDetail, getAllProductIds } from "@/lib/products";
 
-interface ProductPageProps {
-  params: Promise<{ id: string }>;
-}
+export default function ProductPage() {
+  const params = useParams();
+  const [product, setProduct] = useState(null);
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
-  const product = getProductDetail(id);
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/perfumes/${params.id}`)
+      .then(res => res.json())
+      .then(data => setProduct(data));
+  }, [params.id]);
 
-  if (!product) {
-    notFound();
-  }
+  if (!product) return <p className="p-10">Loading...</p>;
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,8 +27,4 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <Footer />
     </div>
   );
-}
-
-export async function generateStaticParams() {
-  return getAllProductIds().map((id) => ({ id }));
 }

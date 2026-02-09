@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 
 export interface CartItem {
   id: string;
+  perfumeId: number;
   name: string;
   price: number;
   image: string;
