@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
+const API = "http://localhost:8080";
+const TOKEN_KEY = "maison_noir_token";
+
 export type Product = {
   id: number;
   name: string;
@@ -27,9 +30,16 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
 
-  // 🔥 LOAD from backend
+  const getHeaders = () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
   const refreshProducts = async () => {
-    const res = await fetch("http://localhost:8080/api/perfumes");
+    const res = await fetch(`${API}/api/perfumes`);
     const data = await res.json();
     setProducts(data.content || []);
   };
@@ -39,30 +49,28 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addProduct = async (product: Omit<Product, "id">) => {
-    await fetch("http://localhost:8080/api/admin/perfumes", {
+    await fetch(`${API}/api/admin/perfumes`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(product),
     });
-
     await refreshProducts();
   };
 
   const updateProduct = async (id: number, updates: Partial<Product>) => {
-    await fetch(`http://localhost:8080/api/admin/perfumes/${id}`, {
+    await fetch(`${API}/api/admin/perfumes/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: getHeaders(),
       body: JSON.stringify(updates),
     });
-
     await refreshProducts();
   };
 
   const deleteProduct = async (id: number) => {
-    await fetch(`http://localhost:8080/api/admin/perfumes/${id}`, {
+    await fetch(`${API}/api/admin/perfumes/${id}`, {
       method: "DELETE",
+      headers: getHeaders(),
     });
-
     await refreshProducts();
   };
 

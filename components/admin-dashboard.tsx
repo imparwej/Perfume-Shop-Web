@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2 } from "lucide-react";
-import { useAdmin } from "@/lib/admin-context";
+import { useAdmin, Product } from "@/lib/admin-context";
+import { apiFetch } from "@/lib/apiClient";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   name: string;
@@ -15,8 +17,22 @@ interface FormData {
   featured: boolean;
 }
 
+interface DashboardData {
+  totalUsers: number;
+  totalOrders: number;
+  totalRevenue: number;
+  last30DaysRevenue: number;
+  totalProducts: number;
+  featuredProducts: number;
+}
+
 export function AdminDashboard() {
+  const router = useRouter();
   const { products, addProduct, updateProduct, deleteProduct } = useAdmin();
+
+  const [dashboardData, setDashboardData] =
+    useState<DashboardData | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -32,7 +48,28 @@ export function AdminDashboard() {
     featured: false,
   });
 
-  const handleOpenForm = (product?: any) => {
+  /* ================= FETCH DASHBOARD ================= */
+
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await apiFetch("/api/admin/dashboard");
+        if (!res) return;
+        const data = await res.json();
+        setDashboardData(data);
+      } catch (err) {
+        console.error("Dashboard fetch failed", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+
+    fetchDashboard();
+  }, []);
+
+  /* ================= FORM HANDLERS ================= */
+
+  const handleOpenForm = (product?: Product) => {
     if (product) {
       setEditingId(product.id);
       setFormData({
@@ -61,7 +98,7 @@ export function AdminDashboard() {
     setIsFormOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const payload = {
@@ -84,25 +121,67 @@ export function AdminDashboard() {
     }
   };
 
+  /* ================= UI ================= */
+
   return (
-    <div className="p-10 space-y-8">
-      <div className="flex justify-between">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+    <div className="p-10 space-y-12">
+
+      {/* ================= STATS ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+
+        <ClickableCard
+          title="Users"
+          value={loadingStats ? "..." : dashboardData?.totalUsers ?? "-"}
+          onClick={() => router.push("/admin/users")}
+        />
+
+        <ClickableCard
+          title="Orders"
+          value={loadingStats ? "..." : dashboardData?.totalOrders ?? "-"}
+          onClick={() => router.push("/admin/orders")}
+        />
+
+        <ClickableCard
+          title="Total Revenue"
+          value={loadingStats ? "..." : `₹${dashboardData?.totalRevenue ?? 0}`}
+          onClick={() => router.push("/admin/revenue")}
+        />
+
+        <StatCard
+          title="30 Days Revenue"
+          value={loadingStats ? "..." : `₹${dashboardData?.last30DaysRevenue ?? 0}`}
+        />
+
+        <StatCard title="Products" value={products.length} />
+
+        <StatCard
+          title="Featured"
+          value={products.filter((p) => p.featured).length}
+        />
+      </div>
+
+      {/* ================= PRODUCT HEADER ================= */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Product Management</h1>
         <button
           onClick={() => handleOpenForm()}
-          className="px-6 py-3 bg-black text-white rounded-lg flex gap-2"
+          className="px-6 py-3 bg-foreground text-background rounded-lg flex gap-2 hover:opacity-90 transition"
         >
           <Plus className="w-4 h-4" />
           Add Product
         </button>
       </div>
 
-      <div className="space-y-3">
+      {/* ================= PRODUCT LIST ================= */}
+      <div className="space-y-4">
         {products.map((p) => (
-          <div key={p.id} className="flex justify-between border p-4 rounded">
+          <div
+            key={p.id}
+            className="flex justify-between items-center bg-card border border-border p-5 rounded-xl hover:shadow-md transition"
+          >
             <div>
               <p className="font-semibold">{p.name}</p>
-              <p>${p.price}</p>
+              <p className="text-muted-foreground">₹{p.price}</p>
             </div>
 
             <div className="flex gap-3">
@@ -118,76 +197,22 @@ export function AdminDashboard() {
         ))}
       </div>
 
+      {/* ================= MODAL ================= */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <form
             onSubmit={handleSubmit}
-            className="bg-white p-8 rounded-lg space-y-4 w-96"
+            className="bg-card border border-border p-8 rounded-xl shadow-lg space-y-4 w-96"
           >
-            <input
-              placeholder="Name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
+            <Input value={formData.name} onChange={(v) => setFormData({ ...formData, name: v })} placeholder="Name" />
+            <Input value={formData.description} onChange={(v) => setFormData({ ...formData, description: v })} placeholder="Description" />
+            <Input value={formData.price} onChange={(v) => setFormData({ ...formData, price: v })} placeholder="Price" />
+            <Input value={formData.imageUrl} onChange={(v) => setFormData({ ...formData, imageUrl: v })} placeholder="Image URL" />
+            <Input value={formData.notes} onChange={(v) => setFormData({ ...formData, notes: v })} placeholder="Notes" />
+            <Input value={formData.size} onChange={(v) => setFormData({ ...formData, size: v })} placeholder="Size" />
+            <Input value={formData.categoryName} onChange={(v) => setFormData({ ...formData, categoryName: v })} placeholder="Category" />
 
-            <input
-              placeholder="Description"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
-
-            <input
-              placeholder="Price"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
-
-            <input
-              placeholder="Image URL"
-              value={formData.imageUrl}
-              onChange={(e) =>
-                setFormData({ ...formData, imageUrl: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
-
-            <input
-              placeholder="Notes"
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
-
-            <input
-              placeholder="Size"
-              value={formData.size}
-              onChange={(e) =>
-                setFormData({ ...formData, size: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
-
-            <input
-              placeholder="Category"
-              value={formData.categoryName}
-              onChange={(e) =>
-                setFormData({ ...formData, categoryName: e.target.value })
-              }
-              className="border p-2 w-full"
-            />
-
-            <label className="flex gap-2">
+            <label className="flex gap-2 items-center">
               <input
                 type="checkbox"
                 checked={formData.featured}
@@ -202,12 +227,15 @@ export function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="flex-1 border p-2"
+                className="flex-1 border border-border p-2 rounded-md"
               >
                 Cancel
               </button>
 
-              <button className="flex-1 bg-black text-white p-2">
+              <button
+                type="submit"
+                className="flex-1 bg-foreground text-background p-2 rounded-md"
+              >
                 Save
               </button>
             </div>
@@ -215,5 +243,61 @@ export function AdminDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+/* ================= COMPONENTS ================= */
+
+function StatCard({
+  title,
+  value,
+}: {
+  title: string;
+  value: string | number;
+}) {
+  return (
+    <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+      <p className="text-sm text-muted-foreground">{title}</p>
+      <p className="text-2xl font-bold mt-2">{value}</p>
+    </div>
+  );
+}
+
+function ClickableCard({
+  title,
+  value,
+  onClick,
+}: {
+  title: string;
+  value: string | number;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="cursor-pointer bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-lg transition"
+    >
+      <p className="text-sm text-muted-foreground">{title}</p>
+      <p className="text-2xl font-bold mt-2">{value}</p>
+    </div>
+  );
+}
+
+function Input({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <input
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="border border-border bg-background p-2 w-full rounded-md"
+    />
   );
 }

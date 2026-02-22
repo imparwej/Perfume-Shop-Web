@@ -20,7 +20,6 @@ export default function AdminPage() {
       return;
     }
 
-    // 🔥 real admin check (backend role)
     if (user?.role === "ADMIN") {
       setIsAdmin(true);
     } else {
@@ -30,7 +29,6 @@ export default function AdminPage() {
     setLoading(false);
   }, [isAuthenticated, user, router]);
 
-  // ===== LOADING SCREEN =====
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -39,23 +37,19 @@ export default function AdminPage() {
     );
   }
 
-  // ===== ACCESS DENIED =====
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)]">
           <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
               <Lock className="w-8 h-8 text-red-500" />
             </div>
-
             <h1 className="text-3xl mb-2">Access Denied</h1>
             <p className="text-muted-foreground mb-8">
               You do not have permission to access the admin panel.
             </p>
-
             <button
               onClick={() => router.push("/")}
               className="px-6 py-3 bg-foreground text-background rounded-lg"
@@ -64,13 +58,11 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
-
         <Footer />
       </div>
     );
   }
 
-  // ===== ADMIN DASHBOARD =====
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
