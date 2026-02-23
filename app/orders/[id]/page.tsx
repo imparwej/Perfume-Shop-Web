@@ -118,9 +118,10 @@ export default function OrderDetailsPage() {
   };
 
   // Check if order can be cancelled
-  const canCancelOrder = order && 
-    ['PLACED', 'PENDING', 'PROCESSING'].includes(order.status.toUpperCase()) &&
-    order.status.toUpperCase() !== 'CANCELLED';
+  const canCancelOrder =
+  order &&
+  order.status &&
+  ["PLACED", "PROCESSING"].includes(order.status.toUpperCase());
 
   // Status configuration
   const statusConfig: any = {
@@ -223,12 +224,22 @@ export default function OrderDetailsPage() {
   const StatusIcon = status.icon;
 
   // Timeline steps
-  const timelineSteps = [
-    { step: 1, label: "Order Placed", date: order.createdAt, completed: true, icon: Calendar },
-    { step: 2, label: "Processing", date: "Preparing items", completed: order.status && (order.status.toString().toUpperCase() !== "PLACED"), icon: Package },
-    { step: 3, label: "Shipped", date: "On its way", completed: order.status && (order.status.toString().toUpperCase() === "SHIPPED" || order.status.toString().toUpperCase() === "DELIVERED"), icon: Truck },
-    { step: 4, label: "Delivered", date: "At your door", completed: order.status && order.status.toString().toUpperCase() === "DELIVERED", icon: CheckCircle2 },
-  ];
+  const statusOrder = ["PLACED", "PROCESSING", "SHIPPED", "DELIVERED"];
+
+const timelineSteps = statusOrder.map((step, index) => ({
+  step: index + 1,
+  label: step,
+  completed:
+    statusOrder.indexOf(order.status.toUpperCase()) >= index,
+  icon:
+    step === "PLACED"
+      ? Calendar
+      : step === "PROCESSING"
+      ? Package
+      : step === "SHIPPED"
+      ? Truck
+      : CheckCircle2,
+}));
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -383,10 +394,10 @@ export default function OrderDetailsPage() {
                               </h3>
                             </div>
                             <p className="text-sm text-muted-foreground pl-8">
-                              {typeof step.date === 'string' && step.date.startsWith('20') 
-                                ? new Date(step.date).toLocaleDateString()
-                                : step.date}
-                            </p>
+                            {step.label === "PLACED"
+                            ? new Date(order.createdAt).toLocaleDateString()
+                            : "In Progress"}
+                          </p>
                           </div>
                           
                           {step.completed && (
@@ -454,7 +465,7 @@ export default function OrderDetailsPage() {
 
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          ₹{item.price.toLocaleString()} each
+                          ₹{(item.price / item.quantity).toLocaleString()} each
                         </p>
                       </div>
                     </div>
@@ -541,9 +552,11 @@ export default function OrderDetailsPage() {
                     <Home className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium text-foreground">Shipping Address</span>
                   </div>
-                  <p className="text-foreground">Your Address</p>
+                  <p className="text-foreground">
+                    {order.shippingAddress}
+                    </p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Will be shown here
+                    {order.city} - {order.pincode}
                   </p>
                 </div>
               </div>
@@ -597,7 +610,6 @@ export default function OrderDetailsPage() {
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );
