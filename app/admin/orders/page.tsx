@@ -50,6 +50,11 @@ interface Order {
   // Tracking
   trackingNumber?: string;
   courierName?: string;
+  shippingAddress?: string;
+  userName?: string;
+  userEmail?: string;
+  paymentStatus?: string;
+  finalState?: boolean;
 
   items?: OrderItem[];
 }
@@ -104,8 +109,8 @@ export default function AdminOrdersPage() {
 }
       const data = await res.json();
 
-      setOrders((prev) =>
-  prev.map((o) =>
+    setOrders((prev) =>
+    prev.map((o) =>
     o.id === id
       ? {
           ...o,
@@ -116,6 +121,11 @@ export default function AdminOrdersPage() {
           cancelledAt: data.cancelledAt,
           trackingNumber: data.trackingNumber,
           courierName: data.courierName,
+          shippingAddress: data.shippingAddress,
+          userName: data.userName,
+          userEmail: data.userEmail,
+          paymentStatus: data.paymentStatus,
+          finalState: data.finalState,
         }
       : o
   )
@@ -308,9 +318,7 @@ export default function AdminOrdersPage() {
                   {/* Actions row */}
                   <div className="flex flex-wrap justify-between items-center gap-4 pt-1">
                     <Select
-                         disabled={
-                         order.status === "CANCELLED" ||
-                         order.status === "DELIVERED" }
+                         disabled={order.finalState}
                       onValueChange={(value) => updateStatus(order.id, value)}
                     >
                       <SelectTrigger className="w-[200px] border-0 border-b border-muted/20 rounded-none bg-transparent py-1 px-0 focus:ring-0 focus:border-amber-700/50 dark:focus:border-amber-300/50 transition-colors duration-300">
@@ -356,35 +364,61 @@ export default function AdminOrdersPage() {
     ) : (
       <>
         {/* ===== TIMELINE ===== */}
-        <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            Order Timeline
-          </p>
+        <div className="space-y-4">
+  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+    Order Timeline
+  </p>
 
-          <div className="space-y-1 text-sm font-light">
-            <div>
-              Placed: {new Date(order.createdAt).toLocaleString()}
-            </div>
+  <div className="space-y-4 text-sm">
 
-            {order.shippedAt && (
-              <div>
-                Shipped: {new Date(order.shippedAt).toLocaleString()}
-              </div>
-            )}
+    <div className="flex items-start gap-3">
+      <div className="w-2 h-2 mt-2 rounded-full bg-amber-600"></div>
+      <div>
+        <div className="font-medium">Order Placed</div>
+        <div className="text-muted-foreground">
+          {new Date(order.createdAt).toLocaleString()}
+        </div>
+      </div>
+    </div>
 
-            {order.deliveredAt && (
-              <div className="text-emerald-600 dark:text-emerald-400">
-                Delivered: {new Date(order.deliveredAt).toLocaleString()}
-              </div>
-            )}
-
-            {order.cancelledAt && (
-              <div className="text-rose-600 dark:text-rose-400">
-                Cancelled: {new Date(order.cancelledAt).toLocaleString()}
-              </div>
-            )}
+    {order.shippedAt && (
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 mt-2 rounded-full bg-blue-600"></div>
+        <div>
+          <div className="font-medium">Shipped</div>
+          <div className="text-muted-foreground">
+            {new Date(order.shippedAt).toLocaleString()}
           </div>
         </div>
+      </div>
+    )}
+
+    {order.deliveredAt && (
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 mt-2 rounded-full bg-emerald-600"></div>
+        <div>
+          <div className="font-medium">Delivered</div>
+          <div className="text-muted-foreground">
+            {new Date(order.deliveredAt).toLocaleString()}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {order.cancelledAt && (
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 mt-2 rounded-full bg-rose-600"></div>
+        <div>
+          <div className="font-medium">Cancelled</div>
+          <div className="text-muted-foreground">
+            {new Date(order.cancelledAt).toLocaleString()}
+          </div>
+        </div>
+      </div>
+    )}
+
+  </div>
+</div>
 
         {/* ===== TRACKING INFO ===== */}
         {order.trackingNumber && (
@@ -399,6 +433,38 @@ export default function AdminOrdersPage() {
             </div>
           </div>
         )}
+
+        {/* ===== USER INFO ===== */}
+<div className="space-y-2">
+  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+    Customer Information
+  </p>
+  <div className="text-sm font-light">
+    <div>Name: {order.userName}</div>
+    <div>Email: {order.userEmail}</div>
+  </div>
+</div>
+
+{/* ===== SHIPPING ADDRESS ===== */}
+<div className="space-y-2 border-t border-muted/10 pt-4">
+  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+    Shipping Address
+  </p>
+  <div className="text-sm font-light">
+    <div>{order.shippingAddress}</div>
+    <div>{order.city} - {order.pincode}</div>
+  </div>
+</div>
+
+{/* ===== PAYMENT STATUS ===== */}
+<div className="space-y-2 border-t border-muted/10 pt-4">
+  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+    Payment Status
+  </p>
+  <div className="text-sm font-light">
+    {order.paymentStatus}
+  </div>
+</div>
 
         {/* ===== PRODUCT DETAILS ===== */}
         <div className="space-y-4 border-t border-muted/10 pt-4">
